@@ -13,6 +13,8 @@ public class q1{
       thread_array[t]= new Thread(new thread_blocking(t));      
     }
     
+    long start_time= System.currentTimeMillis();
+    
     for(int t=0;t<thread_count;t++){
       thread_array[t].start();
     }
@@ -25,6 +27,11 @@ public class q1{
         
       }
     }
+    
+    long end_time= System.currentTimeMillis();
+    
+    System.out.println("time taken by application: "+(end_time-start_time));
+    
     
   }
   
