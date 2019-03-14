@@ -8,12 +8,12 @@ public class processing_thread implements Runnable{
   static int number_operations;
   static int delay;
   static float probability;
-  static int queue_length=10;
+  static int priority_count=10;
   static int max_past_reference_count=10;
-  static Queue<data_object> []q = new Queue[queue_length];
+  volatile static Queue<data_object> []shared_bucked = new Queue[priority_count];
   static {
-    for(int i=0;i<queue_length;i++){
-      q[i]= new LinkedList<data_object>();
+    for(int i=0;i<priority_count;i++){
+      shared_bucked[i]= new LinkedList<data_object>();
     }
   }
   
@@ -24,14 +24,25 @@ public class processing_thread implements Runnable{
   data_object local_cache[]= new data_object[max_past_reference_count];//circular array
   //**********
   
-  processing_thread(){
-    
+  int thread_id=-1;
+  
+  
+  //*******
+  //to be implemented by blocking/non blocking extensions of this class
+  boolean block_or_wait(int priority){    
+    return true;
   }
+  void release(int priority){    
+  }
+  //*******
+  
+  
   
   void add(){
-    int priority= rand.nextInt(queue_length);
-    String val = Thread.currentThread().getName()
-                  +((char)(rand.nextInt(26)+'a'));    
+    
+    int priority= rand.nextInt(priority_count);
+    String val = Integer.toString(thread_id)
+                  +((char)(rand.nextInt(26)+'A'));    
                   
     data_object obj;
     
@@ -45,25 +56,33 @@ public class processing_thread implements Runnable{
       obj=new data_object(val);
     }
     
-    q[priority].add(obj);
+    if(!block_or_wait(priority)){
+          return;
+    }
+    shared_bucked[priority].add(obj);
     
     System.out.println(
       System.currentTimeMillis()
       +" "
-      +Thread.currentThread().getName()
-      +" add"
+      +thread_id
+      +" add "
       +val
       +" "
       +priority
     );
+    release(priority);
     
   }
   
   void deleteMin(){
     data_object ret;
-    for(int priority = 0; priority < queue_length; priority++){
+    for(int priority = 0; priority < priority_count; priority++){
       try{
-        ret=q[priority].remove();
+        if(!block_or_wait(priority)){
+          break;
+        }
+        ret=shared_bucked[priority].remove();
+        release(priority);
         if(ret!=null){
           if(cache_item_count==max_past_reference_count){//overwrite an old value
           local_cache[cache_start_position]=ret;//replace the earliest value
@@ -78,8 +97,8 @@ public class processing_thread implements Runnable{
           System.out.println(
             System.currentTimeMillis()
             +" "
-            +Thread.currentThread().getName()
-            +" del"
+            +thread_id
+            +" del "
             +ret.value
             +" "
             +priority
@@ -87,14 +106,16 @@ public class processing_thread implements Runnable{
           return;
         }
       }
-      catch(NoSuchElementException err){
-        
-      }     
+      catch(NoSuchElementException ex){
+        release(priority);
+      }
+
+      
     }
     System.out.println(
       System.currentTimeMillis()
       +" "
-      +Thread.currentThread().getName()
+      +thread_id
       +" del *"
     );
     
@@ -102,7 +123,7 @@ public class processing_thread implements Runnable{
   
   public void run(){
     Float move_prob;
-    for(int i=0;i<number_operations;i++){      
+    for(int i=0;i<number_operations;i++){
       move_prob = rand.nextFloat();
       if(move_prob<probability){
         add();
@@ -110,7 +131,6 @@ public class processing_thread implements Runnable{
       else{
         deleteMin();
       }
-      
       try{
         Thread.sleep(delay);      
       }
