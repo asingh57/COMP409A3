@@ -38,7 +38,7 @@ public class processing_thread implements Runnable{
   
   
   
-  void add(){
+  void add(){//add item to list
     
     int priority= rand.nextInt(priority_count);
     String val = Integer.toString(thread_id)
@@ -46,7 +46,8 @@ public class processing_thread implements Runnable{
                   
     data_object obj;
     
-    if(cache_item_count>0){
+    //add item to circular array
+    if(cache_item_count>0){//if cached thread's removed cache has something, reassign it
       cache_item_count-=1;
       obj=local_cache[cache_start_position];
       obj.set_object(val);
@@ -56,11 +57,11 @@ public class processing_thread implements Runnable{
       obj=new data_object(val);
     }
     
-    if(!block_or_wait(priority)){
+    if(!block_or_wait(priority)){//acquire exclusive access
           return;
     }
     shared_bucked[priority].add(obj);
-    
+    ///*
     System.out.println(
       System.currentTimeMillis()
       +" "
@@ -70,7 +71,8 @@ public class processing_thread implements Runnable{
       +" "
       +priority
     );
-    release(priority);
+    //*/
+    release(priority);//release 
     
   }
   
@@ -94,6 +96,7 @@ public class processing_thread implements Runnable{
             local_cache[cache_end_position]=ret;//place item
             cache_item_count+=1;//increase count
           }
+          ///*
           System.out.println(
             System.currentTimeMillis()
             +" "
@@ -103,6 +106,7 @@ public class processing_thread implements Runnable{
             +" "
             +priority
           );
+          //*/
           return;
         }
       }
@@ -112,18 +116,21 @@ public class processing_thread implements Runnable{
 
       
     }
+    ///*
     System.out.println(
       System.currentTimeMillis()
       +" "
       +thread_id
       +" del *"
     );
+    //*/
     
   }
   
   public void run(){
     Float move_prob;
     for(int i=0;i<number_operations;i++){
+      
       move_prob = rand.nextFloat();
       if(move_prob<probability){
         add();
